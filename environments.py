@@ -50,6 +50,9 @@ class GridMap:
         self.probability_map = np.ones((self.rows,self.cols))
         # self.probability_map = np.random.random((self.rows,self.cols))
         self.probability_map /= np.sum(self.probability_map);
+
+
+    def display_probability_map(self):
         plt.figure(1)
         plt.imshow(self.probability_map)
         plt.show()
