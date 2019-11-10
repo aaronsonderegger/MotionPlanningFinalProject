@@ -82,6 +82,9 @@ class GridMap:
                 elif lines[r][c] == 'i':
                     self.init_pos = (r,c,0)
 
+    def getObstacles(self):
+        return np.argwhere(self.occupancy_grid)
+
     def is_goal(self,s):
         '''
         Test if a specifid state is the goal state
