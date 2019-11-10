@@ -21,7 +21,7 @@ class LidarSensor:
 
         self.Sensor_Config = sensorConfig
         self.GridMap = GridMap  # This is the gridmap already initialized
-        self.Obsticles = [tuple(o) for o in self.GridMap.getObstacles()]
+        self.Obstacles = [tuple(o) for o in self.GridMap.getObstacles()]
         self.rangeNoise = rangeNoise
         # This just normalizes if the probability is greater than 1
         self.NoiseProbability = NoiseProbability if NoiseProbability<1 else NoiseProbability/100
