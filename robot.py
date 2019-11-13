@@ -15,6 +15,7 @@ class Robot:
         self.probability_map = self.GridMap.probability_map
         self.actions = actions
         self.sensor_config = LidarSensor(sensor_configuration,self.GridMap)
+        self.gauss_3x3 = np.array(([1, 2, 1],[2, 4, 2],[1, 2, 1]))/16.0 #3x3 gaussian kernel
 
     def transition_function(self, action):
         '''
@@ -52,29 +53,25 @@ class Robot:
         '''
         return
 
-    def update_prob_map(self, possible_states):
-        #RATHER THAN JUST DOING UNIFORM PROBABILITY ACROSS THE POSSIBLE states
-        #We could add a gaussian kernel at each of these states?
-        probability_of_possible_states = 1.0 / (len(possible_states))
-
-        likelihood = np.zeros(self.probability_map.shape)
-        for state in possible_states:
-            likelihood[state[0:2]] = probability_of_possible_states
-
-        #Bayes Rule...
-        posterior = likelihood * self.probability_map
-
-        #Normalize the resulting distribution
-        posterior /= np.sum(posterior)
-
-        #The posterior now becomes the prior (our self.probability_map)
-        self.probability_map = copy.copy(posterior)
-
-
+    def update_prob_map(self, possible_states=None, action=None):
         '''
         Use the distribution from possible states and the current probability map
         to get the new distribution of where we are
         '''
+        if(possible_states):
+            #We could add a gaussian kernel at each of these states?
+            probability_of_possible_states = 1.0 / (len(possible_states))
+            likelihood = np.zeros(self.probability_map.shape)
+            for state in possible_states:
+                likelihood[state[0:2]] = probability_of_possible_states
+            #Bayes Rule...
+            posterior = likelihood * self.probability_map
+            #Normalize the resulting distribution
+            posterior /= np.sum(posterior)
+            #The posterior now becomes the prior (our self.probability_map)
+            self.probability_map = copy.copy(posterior)
+        if(action):
+
         return
 
     def get_prob_from_transition(self):
@@ -104,3 +101,4 @@ class Robot:
         #Keep track of where we go...
         self.path_taken.append(self.truth_position)
         self.truth_position = self.GridMap.transition(self.truth_position, rand_act)
+        return rand_act

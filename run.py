@@ -95,10 +95,13 @@ if __name__ == "__main__":
         possible_locations = agent.get_possible_states(sensor_reading)
 
         #3 Update probability_map using the possible states...
-        agent.update_prob_map(possible_locations)
+        agent.update_prob_map(possible_states = possible_locations)
 
         #4 Carry out some action
-        agent.random_movement()
+        desired_action = agent.random_movement()
+
+        #5 Update probability_map using gaussian kernel or transition function
+        agent.update_prob_map(action = desired_action)
 
         #? Display resulting probability map
         agent.display_probability_map()
