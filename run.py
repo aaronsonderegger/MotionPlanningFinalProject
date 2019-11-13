@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
     agent = Robot(options.LIDAR_SENSOR, map_file, actions)
     #Steps
-    for i in range(5):
+    for i in range(25):
         #1 Get distances in each direction using queue_sensors (lidar)
         sensor_reading = agent.queue_sensors()
 
@@ -106,4 +106,4 @@ if __name__ == "__main__":
         #? Display resulting probability map
         agent.display_probability_map()
 
-    print(self.path_taken)
+    print(agent.path_taken)

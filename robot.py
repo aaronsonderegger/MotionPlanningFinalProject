@@ -4,6 +4,7 @@ import random
 import matplotlib
 import copy
 from lidar import LidarSensor
+from scipy.ndimage import convolve
 
 class Robot:
     def __init__(self, sensor_configuration, map_file, actions):
@@ -70,7 +71,25 @@ class Robot:
             posterior /= np.sum(posterior)
             #The posterior now becomes the prior (our self.probability_map)
             self.probability_map = copy.copy(posterior)
+
         if(action):
+            if action == 'u':
+                self.probability_map = np.roll(self.probability_map,-1,0)
+            elif action == 'd':
+                self.probability_map = np.roll(self.probability_map,1,0)
+            elif action == 'l':
+                self.probability_map = np.roll(self.probability_map,-1,1)
+            elif action == 'r':
+                self.probability_map = np.roll(self.probability_map,1,1)
+
+            #Add gaussian noise around all states with non-zero probability
+            # for r in range(self.rows):
+            #     for c in range(self.columns):
+            #         if(self.probability_map[r,c]):
+            #             # self.probabilty_map[r-1:r+2,c-1:c+2] *= self.gauss_3x3
+            print(self.probability_map.shape, self.gauss_3x3.shape)
+            self.probability_map = convolve(self.probability_map, self.gauss_3x3)
+
 
         return
 
@@ -84,7 +103,9 @@ class Robot:
 
     def display_probability_map(self):
         plt.figure()
-        imgplot = plt.imshow(self.probability_map)
+        temp = copy.copy(self.probability_map)
+        temp[self.truth_position[0:2]] += -1
+        imgplot = plt.imshow(temp)
         # Set interpolation to nearest to create sharp boundaries
         imgplot.set_interpolation('nearest')
         # Set color map to diverging style for contrast
@@ -101,4 +122,5 @@ class Robot:
         #Keep track of where we go...
         self.path_taken.append(self.truth_position)
         self.truth_position = self.GridMap.transition(self.truth_position, rand_act)
+        print("Current Position = ", self.truth_position)
         return rand_act
