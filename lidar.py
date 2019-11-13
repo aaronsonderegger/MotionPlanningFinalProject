@@ -17,7 +17,7 @@ class LidarSensor:
             sensorConfig = dict()
             for s in sensorRange:
                 angle,rng = s.split(':')
-                sensorConfig[int(angle)] = int(rng) 
+                sensorConfig[int(angle)] = int(rng)
 
         self.Sensor_Config = sensorConfig
         self.GridMap = GridMap  # This is the gridmap already initialized
@@ -33,8 +33,8 @@ class LidarSensor:
         '''
         if _DEBUG:
             state = list(self.GridMap.init_pos[:])
-            state[_T] = 45  
-            print(state) 
+            state[_T] = 45
+            print(state)
 
         sensorReading = list()
         if _DEBUG:
@@ -43,14 +43,14 @@ class LidarSensor:
             obState = list(state[:])
             # Sensor Takes a perfect measurement
             for i in range(1,self.Sensor_Config[key]+1):
-                # Have to round before casting to int because result of sine and cosine 
+                # Have to round before casting to int because result of sine and cosine
                 # will make weird results.
-                obState[_X] = round(state[_X] + i*math.cos((state[_T] + key)*np.pi/180.0))
-                obState[_Y] = round(state[_Y] + i*math.sin((state[_T] + key)*np.pi/180.0))
+                obState[_X] = int(round(state[_X] + i*math.cos((state[_T] + key)*np.pi/180.0)))
+                obState[_Y] = int(round(state[_Y] + i*math.sin((state[_T] + key)*np.pi/180.0)))
 
                 # Bounds Checking, set distance to 1 iteration less for proper distance
                 if obState[_X] < 0:
-                    obState[_X] = 0 
+                    obState[_X] = 0
                     distance = i-1
                     break
                 if obState[_Y] < 0:
@@ -65,7 +65,6 @@ class LidarSensor:
                     obState[_Y] = self.GridMap.rows-1
                     distance = i-1
                     break
-
                 if self.GridMap.occupancy_grid[obState[0], obState[1]]:
                     distance = i-1
                     break
@@ -83,5 +82,3 @@ class LidarSensor:
         if _DEBUG:
             self.GridMap.display_map([], looking)
         return sensorReading
-    
-        

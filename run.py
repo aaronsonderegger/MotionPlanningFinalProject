@@ -16,7 +16,7 @@ def readCommand(argv):
     To change something from command line you type -a A1 or --actions A1 ...
     '''
     parser = optparse.OptionParser(description = 'Run public tests on code')
-    # parser.set_defaults(generateSolutions=False, edxOutput=False, muteOutput=False, print)   
+    # parser.set_defaults(generateSolutions=False, edxOutput=False, muteOutput=False, print)
     # Variable -h cannot be used since default is help
     parser.add_option('--actions','-a',
                     dest = 'ACTIONS',
@@ -86,4 +86,21 @@ if __name__ == "__main__":
 
 
     agent = Robot(options.LIDAR_SENSOR, map_file, actions)
-    print(agent.queue_sensors(agent.GridMap.init_pos))
+    #Steps
+    for i in range(5):
+        #1 Get distances in each direction using queue_sensors (lidar)
+        sensor_reading = agent.queue_sensors()
+
+        #2 Find states that match sensor_reading
+        possible_locations = agent.get_possible_states(sensor_reading)
+
+        #3 Update probability_map using the possible states...
+        agent.update_prob_map(possible_locations)
+
+        #4 Carry out some action
+        agent.random_movement()
+
+        #? Display resulting probability map
+        agent.display_probability_map()
+
+    print(self.path_taken)
