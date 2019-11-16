@@ -70,6 +70,11 @@ def readCommand(argv):
                     dest = 'TRANSITION',
                     default = '1',
                     help = 'Transition Type:    1->Transition from project1, 2->Transition returning state and probability, 3->Transition returning state')
+    parser.add_option('--iterations','-i',
+                    dest = 'num_iterations',
+                    default = '1',
+                    help = 'Number of iterations of Markov Localization')
+
     (options, args) = parser.parse_args(argv)
     return options
 
@@ -87,12 +92,13 @@ if __name__ == "__main__":
 
     agent = Robot(options.LIDAR_SENSOR, map_file, actions)
     #Steps
-    for i in range(25):
+    for i in range(int(options.num_iterations)):
         #1 Get distances in each direction using queue_sensors (lidar)
         sensor_reading = agent.queue_sensors()
 
         #2 Find states that match sensor_reading
         possible_locations = agent.get_possible_states(sensor_reading)
+        agent.display_possible_states(possible_locations)
 
         #3 Update probability_map using the possible states...
         agent.update_prob_map(possible_states = possible_locations)
@@ -101,8 +107,8 @@ if __name__ == "__main__":
         desired_action = agent.random_movement()
 
         #5 Update probability_map using gaussian kernel or transition function
-        agent.update_prob_map(action = desired_action)
-
+        agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
+# #
         #? Display resulting probability map
         agent.display_probability_map()
 

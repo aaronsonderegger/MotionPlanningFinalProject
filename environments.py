@@ -16,10 +16,13 @@ _T = 2
 _X = 1
 _Y = 0
 _TURN_ANGLE = 45
-_GOAL_COLOR = 0.75
-_INIT_COLOR = 0.25
+# _GOAL_COLOR = 0.75
+_GOAL_COLOR = 0.0
+# _INIT_COLOR = 0.25
+_INIT_COLOR = 0.0
+_CURR_POS_COLOR = 0.5
 _PATH_COLOR_RANGE = _GOAL_COLOR-_INIT_COLOR
-_VISITED_COLOR = 0.9
+_VISITED_COLOR = 0.27
 
 
 class GridMap:
@@ -174,7 +177,7 @@ class GridMap:
             s_prime = tuple(new_pos)
         return s_prime
 
-    def display_map(self, path=[], visited={}, filename=None):
+    def display_map(self, path=[], visited={}, curr_pos =None, filename=None):
         '''
         Visualize the map read in. Optionally display the resulting plan and visisted nodes
 
@@ -182,12 +185,15 @@ class GridMap:
         visited - a set of tuples describing the states visited during a search
         filename - relative path to file where image will be saved
         '''
-        plt.figure(2)
+        fig = plt.figure(2)
+        fig.suptitle("Possible States from Sensor Measurement", fontsize=16)
         display_grid = np.array(self.occupancy_grid, dtype=np.float32)
 
         # Color all visited nodes if requested
         for v in visited:
             display_grid[v[0],v[1]] = _VISITED_COLOR
+        if(curr_pos):
+            display_grid[curr_pos[0],curr_pos[1]] = _CURR_POS_COLOR
         # Color path in increasing color from init to goal
         for i, p in enumerate(path):
             disp_col = _INIT_COLOR + _PATH_COLOR_RANGE*(i+1)/len(path)
@@ -204,7 +210,9 @@ class GridMap:
         imgplot.set_cmap('Spectral')
         if filename is not None:
             plt.savefig(filename)
-        plt.show()
+        plt.draw()
+        plt.waitforbuttonpress(0) # this will wait for indefinite time
+        plt.close(fig)
 
     def heuristic(self, s):
         '''

@@ -42,7 +42,7 @@ class Robot:
         possible_states = []
         for r in range(self.rows):
             for c in range(self.columns):
-                if(self.probability_map[r,c]):
+                if(self.probability_map[r][c] and not self.GridMap.occupancy_grid[r][c]):
                     if(self.queue_sensors((r,c,0)) == sensor_reading):
                         possible_states.append((r,c,0))
 
@@ -54,7 +54,7 @@ class Robot:
         '''
         return
 
-    def update_prob_map(self, possible_states=None, action=None):
+    def update_prob_map(self, possible_states=None, action=None, sensor_reading=None):
         '''
         Use the distribution from possible states and the current probability map
         to get the new distribution of where we are
@@ -72,22 +72,23 @@ class Robot:
             #The posterior now becomes the prior (our self.probability_map)
             self.probability_map = copy.copy(posterior)
 
-        if(action):
-            if action == 'u':
-                self.probability_map = np.roll(self.probability_map,-1,0)
-            elif action == 'd':
-                self.probability_map = np.roll(self.probability_map,1,0)
-            elif action == 'l':
-                self.probability_map = np.roll(self.probability_map,-1,1)
-            elif action == 'r':
-                self.probability_map = np.roll(self.probability_map,1,1)
+        #The sensor reading makes sure we can actually go that direction...
+        if(action and sensor_reading):
 
-            #Add gaussian noise around all states with non-zero probability
-            # for r in range(self.rows):
-            #     for c in range(self.columns):
-            #         if(self.probability_map[r,c]):
-            #             # self.probabilty_map[r-1:r+2,c-1:c+2] *= self.gauss_3x3
-            print(self.probability_map.shape, self.gauss_3x3.shape)
+            if action == 'u'and sensor_reading[3][1]:
+                self.probability_map = np.roll(self.probability_map,-1,0)
+                # print(sensor_reading[0],'u','success')
+            elif action == 'd' and sensor_reading[1][1]:
+                self.probability_map = np.roll(self.probability_map,1,0)
+                # print(sensor_reading[0],'d','success')
+            elif action == 'l'and sensor_reading[2][1]:
+                self.probability_map = np.roll(self.probability_map,-1,1)
+                # print(sensor_reading[0],'l','success')
+            elif action == 'r' and sensor_reading[0][1]:
+                self.probability_map = np.roll(self.probability_map,1,1)
+                # print(sensor_reading[0],'r','success')
+
+
             self.probability_map = convolve(self.probability_map, self.gauss_3x3)
 
 
@@ -102,9 +103,9 @@ class Robot:
         return
 
     def display_probability_map(self):
-        plt.figure()
+        fig = plt.figure()
         temp = copy.copy(self.probability_map)
-        temp[self.truth_position[0:2]] += -1
+        # temp[self.truth_position[0:2]] += -1
         imgplot = plt.imshow(temp)
         # Set interpolation to nearest to create sharp boundaries
         imgplot.set_interpolation('nearest')
@@ -112,7 +113,14 @@ class Robot:
         # imgplot1.set_cmap('gray')
         imgplot.set_cmap('Spectral')
 
-        plt.show()
+        fig.suptitle("Probability Map", fontsize=16)
+        plt.draw()
+        plt.waitforbuttonpress(0) # this will wait for indefinite time
+        plt.close(fig)
+
+    def display_possible_states(self, possible_states):
+        self.GridMap.display_map(visited = possible_states, curr_pos=self.truth_position)
+
 
     def display_traveled_map(self):
         return
