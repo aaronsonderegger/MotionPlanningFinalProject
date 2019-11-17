@@ -26,7 +26,6 @@ class LidarSensor:
         # This just normalizes if the probability is greater than 1
         self.NoiseProbability = NoiseProbability if NoiseProbability<1 else NoiseProbability/100
 
-
     def queue_sensors(self, state):
         '''
         This returns the noisy sensor reading for the robot.
@@ -35,7 +34,6 @@ class LidarSensor:
             state = list(self.GridMap.init_pos[:])
             state[_T] = 45
             print(state)
-
         sensorReading = list()
         if _DEBUG:
             looking = list()
@@ -80,5 +78,6 @@ class LidarSensor:
                 distance = distance - 1 if distance>0 else 0 # Don't want a negative distance
             sensorReading.append((key,distance))
         if _DEBUG:
+            # print(looking)
             self.GridMap.display_map([], looking)
         return sensorReading

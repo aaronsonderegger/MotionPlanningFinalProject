@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
         #5 Update probability_map using gaussian kernel or transition function
         agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
-# #
+
         #? Display resulting probability map
         agent.display_probability_map()
 

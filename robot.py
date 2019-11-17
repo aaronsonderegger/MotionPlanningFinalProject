@@ -16,6 +16,12 @@ class Robot:
         self.probability_map = self.GridMap.probability_map
         self.actions = actions
         self.sensor_config = LidarSensor(sensor_configuration,self.GridMap)
+        
+        # Build a look up table of P(O|S), access by self.p_o_given_s
+        # self.p_o_given_s.keys() will return sensor readings
+        # self.p_o_given_s.items() will return states that could have sensor reading
+        self.initalize_sensor_probability()
+        
         self.gauss_3x3 = np.array(([1, 2, 1],[2, 4, 2],[1, 2, 1]))/16.0 #3x3 gaussian kernel
 
     def transition_function(self, action):
@@ -34,7 +40,47 @@ class Robot:
         else:
             return self.sensor_config.queue_sensors(self.truth_position)
 
-    def get_possible_states(self, sensor_reading):
+    def initalize_sensor_probability(self):
+        '''
+        Call this once during the initialization to build a look up table for the possible 
+        sensor readings. 
+        This is set up to take rotaional moves _ACTIONS_3
+        '''
+        if len(self.actions) == 3:
+            angles = [0,45,90,135,180,225,270,315]
+        else:
+            angles = [0]
+
+        # Create a dictionary that will keep track of list. 
+        # ProbObsStateDict Class Defined below Robot Class
+        self.PossibleStatesFromObservations = ProbObsStateDict()
+
+        # Stores the noise so we can get look up table with and with out noise
+        holdNoise = self.sensor_config.NoiseProbability
+
+        # iterate over (x,y,theta) for rotational moves
+        for r in range(self.rows):
+            for c in range(self.columns):
+                for angle in angles:
+                    # Don't care about the obsticles
+                    if not self.GridMap.occupancy_grid[r][c]:
+                        # Get the Perfect Sensor Reading
+                        self.sensor_config.NoiseProbability = 0.0
+                        sensor = self.sensor_config.queue_sensors((r,c,angle))
+                        for reading in sensor:
+                            self.PossibleStatesFromObservations[reading] = (1-holdNoise,(r,c,angle))
+
+                        # Get the Noisiest Sensor Reading
+                        self.sensor_config.NoiseProbability = 1.0
+                        sensor = self.sensor_config.queue_sensors((r,c,angle))
+                        for reading in sensor:
+                            self.PossibleStatesFromObservations[reading] = (holdNoise,(r,c,angle))
+
+        # Ensure noise is enabled so it's not 100% noisy
+        self.sensor_config.NoiseProbability = holdNoise
+
+
+    def get_possible_states2(self, sensor_reading):
         '''
         Loop over every state with non-zero probabilities, get it's sensor
         reading, and see if it matches our current one.
@@ -47,6 +93,18 @@ class Robot:
                         possible_states.append((r,c,0))
 
         return possible_states
+
+    def get_possible_states(self, sensor_readings):
+        '''
+        look up the states that have the probability of seeing the range.
+        This accounts for the noise in the range sensor.
+        '''
+        possible_states = []
+        for reading in sensor_readings:
+            for p,state in self.PossibleStatesFromObservations[reading]:
+                possible_states.append(state)
+        return possible_states
+
 
     def distribution_from_possible_states(self,states):
         '''
@@ -74,20 +132,18 @@ class Robot:
 
         #The sensor reading makes sure we can actually go that direction...
         if(action and sensor_reading):
-
-            if action == 'u'and sensor_reading[3][1]:
-                self.probability_map = np.roll(self.probability_map,-1,0)
-                # print(sensor_reading[0],'u','success')
-            elif action == 'd' and sensor_reading[1][1]:
-                self.probability_map = np.roll(self.probability_map,1,0)
-                # print(sensor_reading[0],'d','success')
-            elif action == 'l'and sensor_reading[2][1]:
-                self.probability_map = np.roll(self.probability_map,-1,1)
-                # print(sensor_reading[0],'l','success')
-            elif action == 'r' and sensor_reading[0][1]:
-                self.probability_map = np.roll(self.probability_map,1,1)
-                # print(sensor_reading[0],'r','success')
-
+            for angle,rng in sensor_reading:
+                if action == 'u' and (angle == 270 and rng):
+                    self.probability_map = np.roll(self.probability_map,-1,0)
+                    # print(sensor_reading[0],'u','success')
+                elif action == 'd' and (angle == 90 and rng):
+                    self.probability_map = np.roll(self.probability_map,1,0)
+                    # print(sensor_reading[0],'d','success')
+                elif action == 'l' and (angle == 180 and rng):
+                    self.probability_map = np.roll(self.probability_map,-1,1)
+                    # print(sensor_reading[0],'l','success')
+                elif action == 'r' and (angle == 0 and rng):
+                    self.probability_map = np.roll(self.probability_map,1,1)
 
             self.probability_map = convolve(self.probability_map, self.gauss_3x3)
 
@@ -132,3 +188,29 @@ class Robot:
         self.truth_position = self.GridMap.transition(self.truth_position, rand_act)
         print("Current Position = ", self.truth_position)
         return rand_act
+
+
+class ProbObsStateDict:
+    def __init__(self):
+        self.ProbObserveState = dict()
+
+    def keys(self):
+        return self.ProbObserveState.keys()
+
+    def items(self):
+        return self.ProbObserveState.items()
+
+    def __getitem__(self,key):
+        try:
+            return self.ProbObserveState[key]
+        except:
+            self.ProbObserveState[key] = []
+            return self.ProbObserveState[key]
+
+    def __setitem__(self, key, state):
+        try:
+            states = self.ProbObserveState[key]
+        except:
+            states = []
+        states.append(state)
+        self.ProbObserveState[key] = states

@@ -58,6 +58,7 @@ class GridMap:
     def display_probability_map(self):
         plt.figure(1)
         plt.imshow(self.probability_map)
+        print('probmap',self.probability_map)
         plt.show()
 
     def read_map(self, map_path):
