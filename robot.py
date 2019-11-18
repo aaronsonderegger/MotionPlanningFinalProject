@@ -66,18 +66,26 @@ class Robot:
                     if not self.GridMap.occupancy_grid[r][c]:
                         # Get the Perfect Sensor Reading
                         self.sensor_config.NoiseProbability = 0.0
-                        sensor = self.sensor_config.queue_sensors((r,c,angle))
-                        for reading in sensor:
-                            self.PossibleStatesFromObservations[reading] = (1-holdNoise,(r,c,angle))
-
+                        pureSensor = self.sensor_config.queue_sensors((r,c,angle))
                         # Get the Noisiest Sensor Reading
                         self.sensor_config.NoiseProbability = 1.0
-                        sensor = self.sensor_config.queue_sensors((r,c,angle))
-                        for reading in sensor:
-                            self.PossibleStatesFromObservations[reading] = (holdNoise,(r,c,angle))
+                        noisySensor = self.sensor_config.queue_sensors((r,c,angle))
+
+                        # iterate to make sure that there is probabilty that sums to 1
+                        # if noisyReading and pureReading are the same then probabilty is set to 1.
+                        for pAngle,pRange in pureSensor:
+                            for nAngle, nRange in noisySensor:
+                                if pAngle == nAngle and pRange == nRange:
+                                    self.PossibleStatesFromObservations[(pAngle,pRange)] = (1.0,(r,c,angle))
+                                elif pAngle == nAngle and pRange != nRange:
+                                    self.PossibleStatesFromObservations[(pAngle,pRange)] = (1.0-holdNoise,(r,c,angle))
+                                    self.PossibleStatesFromObservations[(nAngle,nRange)] = (holdNoise,(r,c,angle))
 
         # Ensure noise is enabled so it's not 100% noisy
         self.sensor_config.NoiseProbability = holdNoise
+        # for k in self.PossibleStatesFromObservations.keys():
+        #     print(k,len(self.PossibleStatesFromObservations[k]))
+            # print(self.PossibleStatesFromObservations[k])
 
 
     def get_possible_states2(self, sensor_reading):
@@ -212,5 +220,6 @@ class ProbObsStateDict:
             states = self.ProbObserveState[key]
         except:
             states = []
-        states.append(state)
+        if state not in states:
+            states.append(state)
         self.ProbObserveState[key] = states
