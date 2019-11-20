@@ -4,7 +4,7 @@ import optparse
 import sys
 
 
-_ACTIONS = ['u','d','l','r']
+_ACTIONS   = ['u','r','d','l']
 _ACTIONS_R = ['r','l','d','u']
 _ACTIONS_2 = ['u','d','l','r','ne','nw','sw','se']
 _ACTIONS_3 = ['f', 'tl','tr']
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
 
     agent = Robot(options.LIDAR_SENSOR, map_file, actions)
-    agent.setProbabilisticActions(options.ACTION_PROBABILITY)
+    agent.GridMap.setProbabilisticActions(options.ACTION_PROBABILITY)
     # Robot on start up
     agent.display_probability_map()
     #Steps
@@ -114,7 +114,6 @@ if __name__ == "__main__":
         desired_action = agent.random_movement()
 
         #5 Update probability_map using gaussian kernel or transition function
-        # agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)
         # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
         #5.2 Update probability_map using the probability of sensors or transition function
         agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)

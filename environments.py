@@ -10,8 +10,8 @@ from math import hypot, sqrt
 
 _DEBUG = False
 _DEBUG_END = True
-_ACTIONS = ['u','d','l','r']
-_ACTIONS_2 = ['u','d','l','r','ne','nw','sw','se']
+_ACTIONS   = ['u','r','d','l']
+_ACTIONS_2 = ['u','ne','r','se','d','sw','l','nw']
 _T = 2
 _X = 1
 _Y = 0
@@ -32,7 +32,7 @@ class GridMap:
     Additionally provides a simple transition model for grid maps and a convience function
     for displaying maps.
     '''
-    def __init__(self, map_path=None, heuristic='euclid'):
+    def __init__(self, map_path=None, heuristic='euclid',actions=_ACTIONS):
         '''
         Constructor. Makes the necessary class variables. Optionally reads in a provided map
         file given by map_path.
@@ -45,6 +45,7 @@ class GridMap:
         self.init_pos = None
         self.occupancy_grid = None
         self.c_heuristic = heuristic #Specify the chosen heuristic here
+        self.action_set = actions
         if map_path is not None:
             self.read_map(map_path)
         self.create_probability_map()
@@ -54,6 +55,27 @@ class GridMap:
         self.probability_map[self.occupancy_grid] = 0.0
         # self.probability_map = np.random.random((self.rows,self.cols))
         self.probability_map /= np.sum(self.probability_map);
+
+
+    def setProbabilisticActions(self, probabiltyString):
+        '''
+        This takes in a string of probabilities and makes them floats.
+        For the purpose of the assignment, they are the keys to a dictionary.
+        The Dictionary is used to index through actions. 
+        '''
+        self.action_probability = dict()
+        prob = [float(x) for x in probabiltyString.split(',') ]
+        total = sum(prob)               # for normalizing
+        prob = list(np.cumsum(prob))    # adds up values to 1    
+
+        prob1 = list()
+        for p in prob:
+            prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
+
+        for p in prob1:
+            # makes the actions based off probability with the correct action 0.
+            # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
+            self.action_probability[p] = prob1.index(p) - int(len(prob1)/2.0)
 
 
     def display_probability_map(self):
@@ -102,8 +124,21 @@ class GridMap:
         return (s[_X] == self.goal[_X] and
                 s[_Y] == self.goal[_Y])
 
-    def unknow_transition(self, s, a):
-        return
+    def uncertainty_transition(self, s, a):
+        '''
+        Returns a tuple like (0.8, (x',y',t')),(0.1, (x',y',t')),(0.1, (x',y',t'))
+        '''
+        distribution = list()
+        last = 0    # makes the values begin from 0<x<p1. Also incraments up.
+        for k in self.action_probability.keys():
+            # makes action spread over, probability.
+            # if a = u, and probability 80%, then when 10% a = l and right.
+            actionIndex = (self.action_set.index(a) + self.action_probability[k])%len(self.action_set)
+
+            distribution.append((round(k-last,3), self.transition(s, self.action_set[actionIndex])))
+            last = k    # Increments up
+
+        return distribution
 
 
     def transition(self, s, a):

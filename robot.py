@@ -10,7 +10,7 @@ _MOVIE = True
 
 class Robot:
     def __init__(self, sensor_configuration, map_file, actions):
-        self.GridMap = GridMap(map_file)
+        self.GridMap = GridMap(map_file,actions=actions)
         self.truth_position = self.GridMap.init_pos
         self.path_taken = []
         self.rows = self.GridMap.rows
@@ -150,8 +150,25 @@ class Robot:
             self.probability_map /= np.sum(self.probability_map)
 
         if action:
-            print('Transition Actions Not in update_prob_map2')
+            # print(action)
+            if len(self.actions) == 3:
+                angles = [0,45,90,135,180,225,270,315]
+            else:
+                angles = [0]
 
+            # print('Transitions for States')
+            likelihood = np.zeros(self.probability_map.shape)
+            # likelihood = copy.copy(self.probability_map)
+            for r in range(self.rows):
+                for c in range(self.columns):
+                    if not self.GridMap.occupancy_grid[r][c]:
+                        for angle in angles:
+                            successor = self.GridMap.uncertainty_transition((r,c,angle),action)
+                            for prob, statePrime in successor:
+                                likelihood[statePrime[0:2]] += (prob)*self.probability_map[r,c]
+            
+            likelihood /= np.sum(likelihood)
+            self.probability_map = copy.copy(likelihood)
 
         if np.any(np.isnan(self.probability_map)):
             '''
@@ -210,7 +227,6 @@ class Robot:
         return
 
     def display_probability_map(self):
-        # fig = plt.figure()
         if _MOVIE:
             fig = self.fig
             ax = self.ax
@@ -220,7 +236,6 @@ class Robot:
 
         temp = copy.copy(self.probability_map)
         # temp[self.truth_position[0:2]] += -1
-        # imgplot = plt.imshow(temp)
         imgplot = ax.imshow(temp)
         print(temp)
         # Set interpolation to nearest to create sharp boundaries
@@ -235,7 +250,7 @@ class Robot:
                     rbt = '\n* *\n U '
                 else:
                     rbt = ''
-                text = ax.text(c,r, str(round(temp[r,c],2))+rbt, ha='center',va='center',color='k')
+                text = ax.text(c,r, str(round(temp[r,c],4))+rbt, ha='center',va='center',color='k')
 
         fig.suptitle("Probability Map", fontsize=16)
         plt.draw()
@@ -260,25 +275,6 @@ class Robot:
         print("Current Position = ", self.truth_position)
         return rand_act
 
-    def setProbabilisticActions(self, probabiltyString):
-        '''
-        This takes in a string of probabilities and makes them floats.
-        For the purpose of the assignment, they are the keys to a dictionary.
-        The Dictionary is used to index through actions. 
-        '''
-        self.probability = dict()
-        prob = [float(x) for x in probabiltyString.split(',') ]
-        total = sum(prob)               # for normalizing
-        prob = list(np.cumsum(prob))    # adds up values to 1    
-
-        prob1 = list()
-        for p in prob:
-            prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
-
-        for p in prob1:
-            # makes the actions based off probability with the correct action 0.
-            # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
-            self.probability[p] = prob1.index(p) - int(len(prob1)/2.0)
 
 
 
