@@ -51,6 +51,7 @@ class GridMap:
 
     def create_probability_map(self):
         self.probability_map = np.ones((self.rows,self.cols))
+        self.probability_map[self.occupancy_grid] = 0.0
         # self.probability_map = np.random.random((self.rows,self.cols))
         self.probability_map /= np.sum(self.probability_map);
 
@@ -100,6 +101,10 @@ class GridMap:
         # print(s[_X], self.goal[_X],s[_Y], self.goal[_Y])
         return (s[_X] == self.goal[_X] and
                 s[_Y] == self.goal[_Y])
+
+    def unknow_transition(self, s, a):
+        return
+
 
     def transition(self, s, a):
         '''

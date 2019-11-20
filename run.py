@@ -91,23 +91,33 @@ if __name__ == "__main__":
 
 
     agent = Robot(options.LIDAR_SENSOR, map_file, actions)
+    agent.setProbabilisticActions(options.ACTION_PROBABILITY)
+    # Robot on start up
+    agent.display_probability_map()
     #Steps
     for i in range(int(options.num_iterations)):
         #1 Get distances in each direction using queue_sensors (lidar)
         sensor_reading = agent.queue_sensors()
 
         #2 Find states that match sensor_reading
-        possible_locations = agent.get_possible_states(sensor_reading)
-        agent.display_possible_states(possible_locations)
+        # possible_locations = agent.get_possible_states(sensor_reading)
+        #2.2 Find states and probability from sensor_reading
+        possible_locations = agent.get_possible_states2(sensor_reading)
+        # agent.display_possible_states([x[1] for x in possible_locations])
 
         #3 Update probability_map using the possible states...
-        agent.update_prob_map(possible_states = possible_locations)
+        # agent.update_prob_map(possible_states = possible_locations)
+        #3.2 Update probability_map using the possible states...
+        agent.update_prob_map2(possible_states = possible_locations)
 
         #4 Carry out some action
         desired_action = agent.random_movement()
 
         #5 Update probability_map using gaussian kernel or transition function
-        agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
+        # agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)
+        # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
+        #5.2 Update probability_map using the probability of sensors or transition function
+        agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)
 
         #? Display resulting probability map
         agent.display_probability_map()

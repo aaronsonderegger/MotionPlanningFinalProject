@@ -6,6 +6,8 @@ import copy
 from lidar import LidarSensor
 from scipy.ndimage import convolve
 
+_MOVIE = True
+
 class Robot:
     def __init__(self, sensor_configuration, map_file, actions):
         self.GridMap = GridMap(map_file)
@@ -23,6 +25,8 @@ class Robot:
         self.initalize_sensor_probability()
         
         self.gauss_3x3 = np.array(([1, 2, 1],[2, 4, 2],[1, 2, 1]))/16.0 #3x3 gaussian kernel
+        if _MOVIE:
+            self.fig, self.ax = plt.subplots()
 
     def transition_function(self, action):
         '''
@@ -75,20 +79,25 @@ class Robot:
                         # if noisyReading and pureReading are the same then probabilty is set to 1.
                         for pAngle,pRange in pureSensor:
                             for nAngle, nRange in noisySensor:
-                                if pAngle == nAngle and pRange == nRange:
+                                if pAngle == nAngle and pRange == nRange and pRange == 0:
+                                    # for i in rang(1,1+self.sensor_config.Sensor_Config[pAngle]):
+                                    #     self.PossibleStatesFromObservations[pAngle,pRange+i] = (0.0,(r,c,angle))
                                     self.PossibleStatesFromObservations[(pAngle,pRange)] = (1.0,(r,c,angle))
-                                elif pAngle == nAngle and pRange != nRange:
+                                    self.PossibleStatesFromObservations[pAngle,pRange+1] = (0.0,(r,c,angle))
+                                elif pAngle == nAngle:
                                     self.PossibleStatesFromObservations[(pAngle,pRange)] = (1.0-holdNoise,(r,c,angle))
                                     self.PossibleStatesFromObservations[(nAngle,nRange)] = (holdNoise,(r,c,angle))
 
         # Ensure noise is enabled so it's not 100% noisy
         self.sensor_config.NoiseProbability = holdNoise
+        
         # for k in self.PossibleStatesFromObservations.keys():
         #     print(k,len(self.PossibleStatesFromObservations[k]))
-            # print(self.PossibleStatesFromObservations[k])
+        #     print(self.PossibleStatesFromObservations[k])
+        #     print('')
 
 
-    def get_possible_states2(self, sensor_reading):
+    def get_possible_states(self, sensor_reading):
         '''
         Loop over every state with non-zero probabilities, get it's sensor
         reading, and see if it matches our current one.
@@ -102,15 +111,23 @@ class Robot:
 
         return possible_states
 
-    def get_possible_states(self, sensor_readings):
+    def get_possible_states2(self, sensor_readings):
         '''
         look up the states that have the probability of seeing the range.
         This accounts for the noise in the range sensor.
         '''
         possible_states = []
+        prob_state_dict = dict()
         for reading in sensor_readings:
             for p,state in self.PossibleStatesFromObservations[reading]:
-                possible_states.append(state)
+                try:
+                    prob_state_dict[state] *= p
+                except:
+                    prob_state_dict[state] = p
+        
+        for key in prob_state_dict.keys():
+            if prob_state_dict[key] > 0.0:
+                possible_states.append((round(prob_state_dict[key],15),key))  
         return possible_states
 
 
@@ -119,6 +136,31 @@ class Robot:
         Get the probability distriubtion from the possible states
         '''
         return
+
+    def update_prob_map2(self, possible_states=None, action=None, sensor_reading=None):
+        '''
+        Takes in Noisy sensor readings and updates the probability based on them.
+        '''
+        if possible_states:
+            likelihood = np.zeros(self.probability_map.shape)
+            for prob, state in possible_states:
+                likelihood[state[0:2]] = prob 
+
+            self.probability_map *= likelihood
+            self.probability_map /= np.sum(self.probability_map)
+
+        if action:
+            print('Transition Actions Not in update_prob_map2')
+
+
+        if np.any(np.isnan(self.probability_map)):
+            '''
+            Safety Check to make sure that we don't get a 0 probability in all states.
+            '''
+            self.GridMap.create_probability_map()
+            self.probability_map = self.GridMap.probability_map
+
+
 
     def update_prob_map(self, possible_states=None, action=None, sensor_reading=None):
         '''
@@ -164,23 +206,44 @@ class Robot:
         less sure of our state. We need to update our probability map
         using the possible states from our transition function...
         '''
+
         return
 
     def display_probability_map(self):
-        fig = plt.figure()
+        # fig = plt.figure()
+        if _MOVIE:
+            fig = self.fig
+            ax = self.ax
+            ax.clear()
+        else:
+            fig, ax = plt.subplots()
+
         temp = copy.copy(self.probability_map)
         # temp[self.truth_position[0:2]] += -1
-        imgplot = plt.imshow(temp)
+        # imgplot = plt.imshow(temp)
+        imgplot = ax.imshow(temp)
+        print(temp)
         # Set interpolation to nearest to create sharp boundaries
         imgplot.set_interpolation('nearest')
         # Set color map to diverging style for contrast
         # imgplot1.set_cmap('gray')
         imgplot.set_cmap('Spectral')
 
+        for r in range(self.rows):
+            for c in range(self.columns):
+                if (r,c,0) == self.truth_position:
+                    rbt = '\n* *\n U '
+                else:
+                    rbt = ''
+                text = ax.text(c,r, str(round(temp[r,c],2))+rbt, ha='center',va='center',color='k')
+
         fig.suptitle("Probability Map", fontsize=16)
         plt.draw()
-        plt.waitforbuttonpress(0) # this will wait for indefinite time
-        plt.close(fig)
+        if _MOVIE:
+            plt.pause(1)
+        else:            
+            plt.waitforbuttonpress(0) # this will wait for indefinite time
+            plt.close(fig)
 
     def display_possible_states(self, possible_states):
         self.GridMap.display_map(visited = possible_states, curr_pos=self.truth_position)
@@ -196,6 +259,28 @@ class Robot:
         self.truth_position = self.GridMap.transition(self.truth_position, rand_act)
         print("Current Position = ", self.truth_position)
         return rand_act
+
+    def setProbabilisticActions(self, probabiltyString):
+        '''
+        This takes in a string of probabilities and makes them floats.
+        For the purpose of the assignment, they are the keys to a dictionary.
+        The Dictionary is used to index through actions. 
+        '''
+        self.probability = dict()
+        prob = [float(x) for x in probabiltyString.split(',') ]
+        total = sum(prob)               # for normalizing
+        prob = list(np.cumsum(prob))    # adds up values to 1    
+
+        prob1 = list()
+        for p in prob:
+            prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
+
+        for p in prob1:
+            # makes the actions based off probability with the correct action 0.
+            # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
+            self.probability[p] = prob1.index(p) - int(len(prob1)/2.0)
+
+
 
 
 class ProbObsStateDict:
@@ -222,4 +307,5 @@ class ProbObsStateDict:
             states = []
         if state not in states:
             states.append(state)
+
         self.ProbObserveState[key] = states

@@ -9,7 +9,7 @@ _DEBUG = False
 
 class LidarSensor:
     """docstring for LidarSensor"""
-    def __init__(self, sensorConfig, GridMap, rangeNoise=1,NoiseProbability=0.0):
+    def __init__(self, sensorConfig, GridMap, rangeNoise=1,NoiseProbability=0.20):
 
         # Parse the sensor config if it is in the format of string rather than a dictionary.
         if isinstance(sensorConfig,str):
