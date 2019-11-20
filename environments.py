@@ -126,7 +126,7 @@ class GridMap:
 
     def uncertainty_transition(self, s, a):
         '''
-        Returns a tuple like (0.8, (x',y',t')),(0.1, (x',y',t')),(0.1, (x',y',t'))
+        Returns a tuple like (0.1, (x',y',t')),(0.8, (x',y',t')),(0.1, (x',y',t'))
         '''
         distribution = list()
         last = 0    # makes the values begin from 0<x<p1. Also incraments up.
