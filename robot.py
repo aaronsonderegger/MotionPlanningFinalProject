@@ -6,7 +6,7 @@ import copy
 from lidar import LidarSensor
 from scipy.ndimage import convolve
 
-_MOVIE = True
+_MOVIE = False
 
 class Robot:
     def __init__(self, sensor_configuration, map_file, actions):
@@ -18,12 +18,12 @@ class Robot:
         self.probability_map = self.GridMap.probability_map
         self.actions = actions
         self.sensor_config = LidarSensor(sensor_configuration,self.GridMap)
-        
+
         # Build a look up table of P(O|S), access by self.p_o_given_s
         # self.p_o_given_s.keys() will return sensor readings
         # self.p_o_given_s.items() will return states that could have sensor reading
         self.initalize_sensor_probability()
-        
+
         self.gauss_3x3 = np.array(([1, 2, 1],[2, 4, 2],[1, 2, 1]))/16.0 #3x3 gaussian kernel
         if _MOVIE:
             self.fig, self.ax = plt.subplots()
@@ -46,8 +46,8 @@ class Robot:
 
     def initalize_sensor_probability(self):
         '''
-        Call this once during the initialization to build a look up table for the possible 
-        sensor readings. 
+        Call this once during the initialization to build a look up table for the possible
+        sensor readings.
         This is set up to take rotaional moves _ACTIONS_3
         '''
         if len(self.actions) == 3:
@@ -55,7 +55,7 @@ class Robot:
         else:
             angles = [0]
 
-        # Create a dictionary that will keep track of list. 
+        # Create a dictionary that will keep track of list.
         # ProbObsStateDict Class Defined below Robot Class
         self.PossibleStatesFromObservations = ProbObsStateDict()
 
@@ -90,7 +90,7 @@ class Robot:
 
         # Ensure noise is enabled so it's not 100% noisy
         self.sensor_config.NoiseProbability = holdNoise
-        
+
         # for k in self.PossibleStatesFromObservations.keys():
         #     print(k,len(self.PossibleStatesFromObservations[k]))
         #     print(self.PossibleStatesFromObservations[k])
@@ -124,10 +124,10 @@ class Robot:
                     prob_state_dict[state] *= p
                 except:
                     prob_state_dict[state] = p
-        
+
         for key in prob_state_dict.keys():
             if prob_state_dict[key] > 0.0:
-                possible_states.append((round(prob_state_dict[key],15),key))  
+                possible_states.append((round(prob_state_dict[key],15),key))
         return possible_states
 
 
@@ -144,19 +144,17 @@ class Robot:
         if possible_states:
             likelihood = np.zeros(self.probability_map.shape)
             for prob, state in possible_states:
-                likelihood[state[0:2]] = prob 
+                likelihood[state[0:2]] = prob
 
             self.probability_map *= likelihood
             self.probability_map /= np.sum(self.probability_map)
 
         if action:
-            # print(action)
             if len(self.actions) == 3:
                 angles = [0,45,90,135,180,225,270,315]
             else:
                 angles = [0]
 
-            # print('Transitions for States')
             likelihood = np.zeros(self.probability_map.shape)
             # likelihood = copy.copy(self.probability_map)
             for r in range(self.rows):
@@ -166,7 +164,7 @@ class Robot:
                             successor = self.GridMap.uncertainty_transition((r,c,angle),action)
                             for prob, statePrime in successor:
                                 likelihood[statePrime[0:2]] += (prob)*self.probability_map[r,c]
-            
+
             likelihood /= np.sum(likelihood)
             self.probability_map = copy.copy(likelihood)
 
@@ -202,13 +200,10 @@ class Robot:
             for angle,rng in sensor_reading:
                 if action == 'u' and (angle == 270 and rng):
                     self.probability_map = np.roll(self.probability_map,-1,0)
-                    # print(sensor_reading[0],'u','success')
                 elif action == 'd' and (angle == 90 and rng):
                     self.probability_map = np.roll(self.probability_map,1,0)
-                    # print(sensor_reading[0],'d','success')
                 elif action == 'l' and (angle == 180 and rng):
                     self.probability_map = np.roll(self.probability_map,-1,1)
-                    # print(sensor_reading[0],'l','success')
                 elif action == 'r' and (angle == 0 and rng):
                     self.probability_map = np.roll(self.probability_map,1,1)
 
@@ -237,7 +232,7 @@ class Robot:
         temp = copy.copy(self.probability_map)
         # temp[self.truth_position[0:2]] += -1
         imgplot = ax.imshow(temp)
-        print(temp)
+        # print(temp)
         # Set interpolation to nearest to create sharp boundaries
         imgplot.set_interpolation('nearest')
         # Set color map to diverging style for contrast
@@ -256,7 +251,7 @@ class Robot:
         plt.draw()
         if _MOVIE:
             plt.pause(1)
-        else:            
+        else:
             plt.waitforbuttonpress(0) # this will wait for indefinite time
             plt.close(fig)
 
