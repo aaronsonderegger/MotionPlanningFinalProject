@@ -18,6 +18,7 @@ class Robot:
         self.probability_map = self.GridMap.probability_map
         self.actions = actions
         self.sensor_config = LidarSensor(sensor_configuration,self.GridMap)
+        self.optimal_policy = []
 
         # Build a look up table of P(O|S), access by self.p_o_given_s
         # self.p_o_given_s.keys() will return sensor readings
