@@ -18,6 +18,7 @@ class Robot:
         self.probability_map = self.GridMap.probability_map
         self.actions = actions
         self.sensor_config = LidarSensor(sensor_configuration,self.GridMap)
+        self.optimal_policy = []
 
         # Build a look up table of P(O|S), access by self.p_o_given_s
         # self.p_o_given_s.keys() will return sensor readings
@@ -270,6 +271,18 @@ class Robot:
         self.truth_position = self.GridMap.transition(self.truth_position, rand_act)
         print("Current Position = ", self.truth_position)
         return rand_act
+
+    def movement_from_policy(self):
+        action_probabilities = []
+        for act, i in zip(self.actions,range(len(self.actions))):
+            action_probabilities += [np.sum((self.optimal_policy==act)*self.probability_map)]
+            print("test = ", (self.optimal_policy==act))
+        most_probable_action = self.actions[np.argmax(action_probabilities)]
+        self.path_taken.append(self.truth_position)
+        self.truth_position = self.GridMap.transition(self.truth_position, most_probable_action)
+        print("Current Position = ", self.truth_position)
+
+        return most_probable_action
 
 
 
