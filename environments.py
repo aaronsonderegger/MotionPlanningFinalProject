@@ -7,6 +7,7 @@ import numpy as np
 import heapq
 import matplotlib.pyplot as plt
 from math import hypot, sqrt
+import pickle
 
 _DEBUG = False
 _DEBUG_END = True
@@ -24,6 +25,23 @@ _CURR_POS_COLOR = 0.5
 _PATH_COLOR_RANGE = _GOAL_COLOR-_INIT_COLOR
 _VISITED_COLOR = 0.27
 
+class ValueIteration_Dict:
+    def __init__(self, startingValue=0):
+        self.values = dict()
+        self.startVal = startingValue
+
+    def keys(self):
+        return self.values.keys()
+
+    def __getitem__(self,key):
+        try:
+            return self.values[key]
+        except:
+            self.values[key] = self.startVal
+            return self.values[key]
+
+    def __setitem__(self, key, value):
+        self.values[key] = value
 
 class GridMap:
     '''
@@ -48,7 +66,11 @@ class GridMap:
         self.action_set = actions
         if map_path is not None:
             self.read_map(map_path)
+
         self.create_probability_map()
+        
+
+
 
     def create_probability_map(self):
         self.probability_map = np.ones((self.rows,self.cols))
@@ -83,6 +105,103 @@ class GridMap:
         plt.imshow(self.probability_map)
         print('probmap',self.probability_map)
         plt.show()
+
+    def display_MDPmap(self, values=ValueIteration_Dict(), filename=None):
+        '''
+        Visualize the values computed in ValueIteration.
+        '''
+        display_grid = np.array(self.occupancy_grid, dtype=np.float32)
+        fig,ax = plt.subplots()
+
+        # Color all visited nodes if requested
+        for v in values.keys():
+            display_grid[v[0],v[1]] = _VISITED_COLOR
+
+        # Color path in increasing color from init to goal
+        for i, p in enumerate(values.keys()):
+            disp_col = _GOAL_COLOR*values[p]/10
+            display_grid[p[0],p[1]] = disp_col
+
+        if filename is not None and 'map1' in filename:
+            dpi = 800
+            fontsize = 4
+        else:
+            dpi=80
+            fontsize = 16
+
+        imgplot = ax.imshow(display_grid)
+        for v in values.keys():
+            text = ax.text(v[1],v[0], round(values[v],2), ha="center", va="center",color="k",size=fontsize)
+
+        # Set interpolation to nearest to create sharp boundaries
+        imgplot.set_interpolation('nearest')
+        # Set color map to diverging style for contrast
+        imgplot.set_cmap('Spectral')
+        if filename is not None:
+            plt.savefig(filename+'values',dpi=dpi)
+
+        fig.set_size_inches(18.5, 10.5)
+        plt.show()
+
+
+    def display_ActionMap(self,values=ValueIteration_Dict(), actions=ValueIteration_Dict(), filename=None):
+        '''
+        Visualize the Actions taken in ValueIteration
+        '''
+        display_grid = np.array(self.occupancy_grid, dtype=np.float32)
+        fig,ax = plt.subplots()
+
+        for i, p in enumerate(values.keys()):
+            disp_col = _GOAL_COLOR*values[p]/10
+            display_grid[p[0],p[1]] = disp_col
+
+        imgplot = ax.imshow(display_grid)
+
+        if filename is not None and 'map1' in filename:
+            dpi = 800
+        else:
+            dpi = 400
+
+        for k in actions.keys():
+            U,V = self.arrowDirections(actions[k])
+            q = ax.quiver(k[1],k[0], U,V,pivot='mid')
+
+
+        imgplot.set_interpolation('nearest')
+        # Set color map to diverging style for contrast
+        imgplot.set_cmap('Spectral')
+
+        if filename is not None:
+            plt.savefig(filename+'_actions',dpi=800)
+
+    
+        fig.set_size_inches(18.5, 10.5)
+
+        plt.show()
+
+
+    def arrowDirections(self, action):
+        '''
+        Used for the action map.
+        '''
+        if action == 'u':
+            return (0,1)
+        elif action == 'r':
+            return (1,0)
+        elif action == 'd':
+            return (0,-1)
+        elif action == 'l':
+            return (-1,0)
+        elif action == 'ne':
+            return (sqrt(2),sqrt(2))
+        elif action == 'se':
+            return (sqrt(2),-sqrt(2))
+        elif action == 'sw':
+            return (-sqrt(2),-sqrt(2))
+        elif action == 'nw':
+            return (-sqrt(2),sqrt(2))
+        else:
+            return (0,0)
 
     def read_map(self, map_path):
         '''
@@ -139,7 +258,6 @@ class GridMap:
             last = k    # Increments up
 
         return distribution
-
 
     def transition(self, s, a):
         '''
@@ -278,6 +396,18 @@ class GridMap:
 
         return g_cost
 
+    def InitializeValueIteration(self,map_path):
+        try:
+            policyFile = open('policy_'+map_path+'.obj','rb')
+            print('loading')
+            self.policies = pickle.load(policyFile) 
+        except:
+            print('creating Policies')
+            values,self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
+            policyFile = open('policy_'+map_path+'.obj', 'wb')
+            pickle.dump(self.policies, policyFile)
+        # self.display_ActionMap({},self.policies)
+        # return policy
 
 class SearchNode:
     def __init__(self, s, A, parent=None, parent_action=None):
@@ -581,3 +711,57 @@ def backpath(node):
     action_path.reverse()
 
     return path, action_path
+
+def ValueIteration(initState, transitionFunction, is_goal, actions,
+                   discout=0.8, goalReward=100, stateReward=0,otherStatePenality=None):
+    valuesK = ValueIteration_Dict()     # by default all states that are visited for first time are set to 0.
+    valuesK_1 = ValueIteration_Dict()   # Needed so I don't keep updating by default set to 0, so I can just call it in my loop, unlike a regular dicitonary.
+    rewards = ValueIteration_Dict(stateReward)
+    actionsDict = ValueIteration_Dict()
+    frontier = list()           # For iterating over all states
+    if otherStatePenality is not None:
+        for penalty,state in otherStatePenality:
+            rewards[state] = penalty
+
+    # for i in range(iterations):
+    iterations = 1  
+    converge = [False]
+    while False in converge:
+        converge = []
+        visited = list()
+        frontier.append(initState)
+        # Iterates over all States for v^k(s)
+        while len(frontier) > 0:
+            s = frontier.pop(0)
+            if is_goal(s):
+                rewards[s] = goalReward
+
+            # if s not in visited and not is_goal(s):
+            if s not in visited:
+                # Iterate over all Actions
+                for a in actions:
+                    successor = transitionFunction(s,a)
+                    val = rewards[s]
+                    # Value Iteration Portion
+                    for prob,sPrime in successor:
+                        frontier.append(sPrime)
+                        val += discout*prob*valuesK_1[sPrime]
+                    if valuesK[s] < val:
+                        valuesK[s] = val
+                        actionsDict[s] = a
+                visited.append(s) # So I don't iterate over again
+
+        iterations += 1
+        
+        # Update previous value k-1
+        for state in visited:
+            if round(valuesK_1[state],15) == round(valuesK[state],15) and iterations > 10:
+                converge.append(True)
+            else:
+                converge.append(False)
+
+            valuesK_1[state] = valuesK[state]
+
+    # print(len(valuesK.keys()), len(actionsDict.keys()))
+    # print('Converged at',iterations)
+    return (valuesK,actionsDict)

@@ -2,6 +2,7 @@
 from robot import Robot
 import optparse
 import sys
+import time
 
 
 _ACTIONS   = ['u','r','d','l']
@@ -42,6 +43,10 @@ def readCommand(argv):
                     dest = 'GOAL_REWARD',
                     default = '10',
                     help = 'Goal Reward:    This is the reward for the goal')
+    parser.add_option('--iterations','-i',
+                    dest = 'num_iterations',
+                    default = '1',
+                    help = 'Number of iterations of Markov Localization')
     parser.add_option('--lidar','-l',
                     dest = 'LIDAR_SENSOR',
                     default = '0:1,90:1,180:1,270:1',
@@ -70,10 +75,10 @@ def readCommand(argv):
                     dest = 'TRANSITION',
                     default = '1',
                     help = 'Transition Type:    1->Transition from project1, 2->Transition returning state and probability, 3->Transition returning state')
-    parser.add_option('--iterations','-i',
-                    dest = 'num_iterations',
-                    default = '1',
-                    help = 'Number of iterations of Markov Localization')
+    parser.add_option('--runStats','-x',
+                    dest = 'RUNNING_STATS',
+                    default = False,
+                    help = 'Running Stats:      Boolian variable, enables you to disable displaying map and to run as fast as possible for ')
 
     (options, args) = parser.parse_args(argv)
     return options
@@ -89,36 +94,62 @@ if __name__ == "__main__":
     elif options.ACTIONS.lower() == 'a3':
         actions = _ACTIONS_3
 
+    if options.RUNNING_STATS:
+        statRuns = 100
+    else:
+        statRuns = 1
 
-    agent = Robot(options.LIDAR_SENSOR, map_file, actions)
-    agent.GridMap.setProbabilisticActions(options.ACTION_PROBABILITY)
-    # Robot on start up
-    agent.display_probability_map()
-    #Steps
-    for i in range(int(options.num_iterations)):
-        #1 Get distances in each direction using queue_sensors (lidar)
-        sensor_reading = agent.queue_sensors()
-
-        #2 Find states that match sensor_reading
-        # possible_locations = agent.get_possible_states(sensor_reading)
-        #2.2 Find states and probability from sensor_reading
-        possible_locations = agent.get_possible_states2(sensor_reading)
-        # agent.display_possible_states([x[1] for x in possible_locations])
-
-        #3 Update probability_map using the possible states...
-        # agent.update_prob_map(possible_states = possible_locations)
-        #3.2 Update probability_map using the possible states...
-        agent.update_prob_map2(possible_states = possible_locations)
-
-        #4 Carry out some action
-        desired_action = agent.random_movement()
-
-        #5 Update probability_map using gaussian kernel or transition function
-        # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
-        #5.2 Update probability_map using the probability of sensors or transition function
-        agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)
-
-        #? Display resulting probability map
-        agent.display_probability_map()
-
-    print(agent.path_taken)
+    successStats = []
+    offlinePlanningTime = []
+    runTimeStats = []
+    converganceStats = []
+    for _ in range(statRuns):
+        goalReached = False
+        start = time.time()
+        agent = Robot(options.LIDAR_SENSOR, map_file, actions)
+        agent.GridMap.setProbabilisticActions(options.ACTION_PROBABILITY)
+        agent.GridMap.InitializeValueIteration(options.MAP)
+        offlinePlanningTime.append(time.time() - start)
+        start = time.time()
+        # Robot on start up
+        if not options.RUNNING_STATS:
+            agent.display_probability_map()
+        #Steps
+        for i in range(int(options.num_iterations)):
+            #1 Get distances in each direction using queue_sensors (lidar)
+            sensor_reading = agent.queue_sensors()
+    
+            #2 Find states that match sensor_reading
+            # possible_locations = agent.get_possible_states(sensor_reading)
+            #2.2 Find states and probability from sensor_reading
+            possible_locations = agent.get_possible_states2(sensor_reading)
+            # agent.display_possible_states([x[1] for x in possible_locations])
+    
+            #3 Update probability_map using the possible states...
+            # agent.update_prob_map(possible_states = possible_locations)
+            #3.2 Update probability_map using the possible states...
+            agent.update_prob_map2(possible_states = possible_locations)
+    
+            #4 Carry out some action
+            desired_action = agent.random_movement()
+    
+            #5 Update probability_map using gaussian kernel or transition function
+            # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
+            #5.2 Update probability_map using the probability of sensors or transition function
+            agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)
+    
+            #? Display resulting probability map
+            if not options.RUNNING_STATS:
+                agent.display_probability_map()
+            goalReached = False
+        
+        runTimeStats.append(time.time() - start)
+        successStats.append(goalReached) 
+        converganceStats.append(i)           
+        print(agent.path_taken)
+    print('Statistics For',options.MAP)
+    print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
+    print('Offline Planning time Average:',sum(offlinePlanningTime)/len(offlinePlanningTime))
+    print('Running time Average:',sum(runTimeStats)/len(runTimeStats))
+    print('Reached Goal After:',sum(converganceStats)/len(converganceStats),'iterations')
+    
