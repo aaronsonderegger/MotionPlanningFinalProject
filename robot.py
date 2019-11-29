@@ -6,7 +6,7 @@ import copy
 from lidar import LidarSensor
 from scipy.ndimage import convolve
 
-_MOVIE = True
+_MOVIE = False
 
 class Robot:
     def __init__(self, sensor_configuration, map_file, actions):
@@ -251,8 +251,7 @@ class Robot:
         fig.suptitle("Probability Map", fontsize=16)
         plt.draw()
         if _MOVIE:
-            plt.pause(0.1)
-
+            plt.pause(1)
         else:
             plt.waitforbuttonpress(0) # this will wait for indefinite time
             plt.close(fig)
