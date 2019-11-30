@@ -111,6 +111,7 @@ if __name__ == "__main__":
         agent.GridMap.InitializeValueIteration(options.MAP)
         offlinePlanningTime.append(time.time() - start)
         start = time.time()
+        # print("POLICIES",agent.GridMap.policies.values())
         # Robot on start up
         if not options.RUNNING_STATS:
             agent.display_probability_map()
@@ -131,17 +132,25 @@ if __name__ == "__main__":
             agent.update_prob_map2(possible_states = possible_locations)
 
             #4 Carry out some action
-            desired_action = agent.random_movement()
+            # desired_action = agent.random_movement()
+            desired_action = agent.movement_from_policy()
 
             #5 Update probability_map using gaussian kernel or transition function
             # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
             #5.2 Update probability_map using the probability of sensors or transition function
             agent.update_prob_map2(action = desired_action, sensor_reading=sensor_reading)
 
+            #6 Check if we have arrived at the goal state
+            goalReached = agent.check_if_in_goal_state()
+            if(goalReached):
+                print("GOAL REACHED!")
+                agent.display_probability_map()
+                break
+
             #? Display resulting probability map
             if not options.RUNNING_STATS:
-                agent.display_probability_map()
-            goalReached = False
+                pass
+                # agent.display_probability_map()
 
         runTimeStats.append(time.time() - start)
         successStats.append(goalReached)

@@ -68,7 +68,7 @@ class GridMap:
             self.read_map(map_path)
 
         self.create_probability_map()
-        
+
 
 
 
@@ -79,25 +79,37 @@ class GridMap:
         self.probability_map /= np.sum(self.probability_map);
 
 
-    def setProbabilisticActions(self, probabiltyString):
+    def setProbabilisticActions(self, probabilityString):
         '''
         This takes in a string of probabilities and makes them floats.
         For the purpose of the assignment, they are the keys to a dictionary.
-        The Dictionary is used to index through actions. 
+        The Dictionary is used to index through actions.
         '''
         self.action_probability = dict()
-        prob = [float(x) for x in probabiltyString.split(',') ]
-        total = sum(prob)               # for normalizing
-        prob = list(np.cumsum(prob))    # adds up values to 1    
+        prob = []
 
-        prob1 = list()
-        for p in prob:
-            prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
+        for element in probabilityString.split(','):
+            prob += [float(element)]
+        print(prob)
+        key_indices = np.array(range(len(prob)))
+        key_indices -= ((len(prob)-1) / 2)
+        for key, key_prob in zip(key_indices, prob):
+            self.action_probability[key] = key_prob
 
-        for p in prob1:
-            # makes the actions based off probability with the correct action 0.
-            # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
-            self.action_probability[p] = prob1.index(p) - int(len(prob1)/2.0)
+        # # prob = [float(x) for x in probabiltyString.split(',') ]
+        # total = sum(prob)               # for normalizing
+        # prob = list(np.cumsum(prob))    # adds up values to 1
+        # #
+        #
+        # print("action prob = ", prob)
+        # prob1 = list()
+        # for p in prob:
+        #     prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
+        #
+        # for p in prob1:
+        #     # makes the actions based off probability with the correct action 0.
+        #     # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
+        #     self.action_probability[p] = prob1.index(p) - int(len(prob1)/2.0)
 
 
     def display_probability_map(self):
@@ -174,7 +186,7 @@ class GridMap:
         if filename is not None:
             plt.savefig(filename+'_actions',dpi=800)
 
-    
+
         fig.set_size_inches(18.5, 10.5)
 
         plt.show()
@@ -252,9 +264,10 @@ class GridMap:
         for k in self.action_probability.keys():
             # makes action spread over, probability.
             # if a = u, and probability 80%, then when 10% a = l and right.
-            actionIndex = (self.action_set.index(a) + self.action_probability[k])%len(self.action_set)
+            actionIndex = (self.action_set.index(a) + k) % len(self.action_set)
+            # print("a = ", self.action_set[actionIndex], "actionINdex = ",actionIndex, "action_prob = ",self.action_probability[k])
 
-            distribution.append((round(k-last,3), self.transition(s, self.action_set[actionIndex])))
+            distribution.append((self.action_probability[k], self.transition(s, self.action_set[actionIndex])))
             last = k    # Increments up
 
         return distribution
@@ -400,7 +413,7 @@ class GridMap:
         try:
             policyFile = open('policy_'+map_path+'.obj','rb')
             print('loading')
-            self.policies = pickle.load(policyFile) 
+            self.policies = pickle.load(policyFile)
         except:
             print('creating Policies')
             values,self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
@@ -724,7 +737,7 @@ def ValueIteration(initState, transitionFunction, is_goal, actions,
             rewards[state] = penalty
 
     # for i in range(iterations):
-    iterations = 1  
+    iterations = 1
     converge = [False]
     while False in converge:
         converge = []
@@ -752,10 +765,9 @@ def ValueIteration(initState, transitionFunction, is_goal, actions,
                 visited.append(s) # So I don't iterate over again
 
         iterations += 1
-        
         # Update previous value k-1
         for state in visited:
-            if round(valuesK_1[state],15) == round(valuesK[state],15) and iterations > 10:
+            if (round(valuesK_1[state],15) == round(valuesK[state],15) and iterations > 10) or iterations > 10:
                 converge.append(True)
             else:
                 converge.append(False)

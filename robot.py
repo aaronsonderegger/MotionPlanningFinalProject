@@ -167,7 +167,7 @@ class Robot:
                                 likelihood[statePrime[0:2]] += (prob)*self.probability_map[r,c]
 
             likelihood /= np.sum(likelihood)
-            self.probability_map = copy.copy(likelihood)
+            self.probability_map = copy.deepcopy(likelihood)
 
         if np.any(np.isnan(self.probability_map)):
             '''
@@ -272,16 +272,23 @@ class Robot:
         return rand_act
 
     def movement_from_policy(self):
-        action_probabilities = []
-        for act, i in zip(self.actions,range(len(self.actions))):
-            action_probabilities += [np.sum((self.optimal_policy==act)*self.probability_map)]
-            print("test = ", (self.optimal_policy==act))
+        action_probabilities = np.zeros(4)
+        for r in range(self.rows):
+            for c in range(self.columns):
+                if(self.GridMap.policies[(r,c,0)] != 0):
+                    # print(np.array(self.actions) == self.GridMap.policies[(r,c,0)], self.GridMap.policies[(r,c,0)])
+                    truth_array = np.array(np.array(self.actions) == self.GridMap.policies[(r,c,0)])
+                    action_probabilities += truth_array*self.probability_map[r][c]
         most_probable_action = self.actions[np.argmax(action_probabilities)]
-        self.path_taken.append(self.truth_position)
         self.truth_position = self.GridMap.transition(self.truth_position, most_probable_action)
-        print("Current Position = ", self.truth_position)
+        self.path_taken.append(self.truth_position)
+        # print("Current Position = ", self.truth_position)
 
         return most_probable_action
+
+    def check_if_in_goal_state(self):
+        return self.truth_position[0:2] == self.GridMap.goal
+
 
 
 
