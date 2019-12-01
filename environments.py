@@ -92,20 +92,21 @@ class GridMap:
             prob += [float(element)]
         print(prob)
         key_indices = np.array(range(len(prob)))
-        key_indices -= ((len(prob)-1) / 2)
+        key_indices -= int((len(prob)-1) / 2)
         for key, key_prob in zip(key_indices, prob):
             self.action_probability[key] = key_prob
 
-        # # prob = [float(x) for x in probabiltyString.split(',') ]
+
+        # prob = [float(x) for x in probabilityString.split(',') ]
         # total = sum(prob)               # for normalizing
         # prob = list(np.cumsum(prob))    # adds up values to 1
         # #
-        #
+        
         # print("action prob = ", prob)
         # prob1 = list()
         # for p in prob:
         #     prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
-        #
+        
         # for p in prob1:
         #     # makes the actions based off probability with the correct action 0.
         #     # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
@@ -410,16 +411,20 @@ class GridMap:
         return g_cost
 
     def InitializeValueIteration(self,map_path):
-        try:
-            policyFile = open('policy_'+map_path+'.obj','rb')
-            print('loading')
-            self.policies = pickle.load(policyFile)
-        except:
-            print('creating Policies')
-            values,self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
-            policyFile = open('policy_'+map_path+'.obj', 'wb')
-            pickle.dump(self.policies, policyFile)
+        values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
+        # try:
+        #     policyFile = open('policy_'+map_path+'.obj','rb')
+        #     print('loading')
+        #     self.policies = pickle.load(policyFile)
+        #     self.display_MDPmap(values)
+        # except:
+        #     print('creating Policies')
+        #     values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
+        #     policyFile = open('policy_'+map_path+'.obj', 'wb')
+        #     pickle.dump(self.policies, policyFile)
+        # self.display_MDPmap(values)
         # self.display_ActionMap({},self.policies)
+
         # return policy
 
 class SearchNode:
@@ -726,7 +731,7 @@ def backpath(node):
     return path, action_path
 
 def ValueIteration(initState, transitionFunction, is_goal, actions,
-                   discout=0.8, goalReward=100, stateReward=0,otherStatePenality=None):
+                   discout=0.8, goalReward=10, stateReward=0,otherStatePenality=None):
     valuesK = ValueIteration_Dict()     # by default all states that are visited for first time are set to 0.
     valuesK_1 = ValueIteration_Dict()   # Needed so I don't keep updating by default set to 0, so I can just call it in my loop, unlike a regular dicitonary.
     rewards = ValueIteration_Dict(stateReward)
@@ -767,7 +772,7 @@ def ValueIteration(initState, transitionFunction, is_goal, actions,
         iterations += 1
         # Update previous value k-1
         for state in visited:
-            if (round(valuesK_1[state],15) == round(valuesK[state],15) and iterations > 10) or iterations > 10:
+            if (round(valuesK_1[state],10) == round(valuesK[state],10) and iterations > 10):
                 converge.append(True)
             else:
                 converge.append(False)

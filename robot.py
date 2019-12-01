@@ -6,7 +6,7 @@ import copy
 from lidar import LidarSensor
 from scipy.ndimage import convolve
 
-_MOVIE = False
+_MOVIE = True
 
 class Robot:
     def __init__(self, sensor_configuration, map_file, actions):
@@ -272,7 +272,7 @@ class Robot:
         return rand_act
 
     def movement_from_policy(self):
-        action_probabilities = np.zeros(4)
+        action_probabilities = np.zeros(len(self.actions))
         for r in range(self.rows):
             for c in range(self.columns):
                 if(self.GridMap.policies[(r,c,0)] != 0):
@@ -285,6 +285,17 @@ class Robot:
         # print("Current Position = ", self.truth_position)
 
         return most_probable_action
+
+    def movement_from_max_policy(self):
+        row,col = np.where(self.probability_map == np.max(self.probability_map))
+        key = (row[0],col[0],0)
+        policy = self.GridMap.policies[key]
+        # print(policy)
+        self.truth_position = self.GridMap.transition(self.truth_position, policy)
+        self.path_taken.append(self.truth_position)
+        return policy
+
+
 
     def check_if_in_goal_state(self):
         return self.truth_position[0:2] == self.GridMap.goal

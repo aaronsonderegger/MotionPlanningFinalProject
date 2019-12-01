@@ -103,7 +103,8 @@ if __name__ == "__main__":
     offlinePlanningTime = []
     runTimeStats = []
     converganceStats = []
-    for _ in range(statRuns):
+    for test in range(statRuns):
+        print('Running Test',test+1)
         goalReached = False
         start = time.time()
         agent = Robot(options.LIDAR_SENSOR, map_file, actions)
@@ -134,6 +135,7 @@ if __name__ == "__main__":
             #4 Carry out some action
             # desired_action = agent.random_movement()
             desired_action = agent.movement_from_policy()
+            # desired_action = agent.movement_from_max_policy()
 
             #5 Update probability_map using gaussian kernel or transition function
             # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
@@ -144,20 +146,29 @@ if __name__ == "__main__":
             goalReached = agent.check_if_in_goal_state()
             if(goalReached):
                 print("GOAL REACHED!")
-                agent.display_probability_map()
+                converganceStats.append(i+1)
+                # agent.display_probability_map()
                 break
 
             #? Display resulting probability map
             if not options.RUNNING_STATS:
-                pass
-                # agent.display_probability_map()
+                # pass
+                agent.display_probability_map()
 
         runTimeStats.append(time.time() - start)
         successStats.append(goalReached)
-        converganceStats.append(i)
         print(agent.path_taken)
-    print('Statistics For',options.MAP)
+    aveActions = sum(converganceStats)/len(converganceStats)
+    std = 0.0
+    for i in converganceStats:
+        std += (i - aveActions)**2
+    std = (std/(len(converganceStats) - 1))**0.5 
+
+    print('Statistics For',options.MAP,'and actions',actions)
     print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
-    print('Offline Planning time Average:',sum(offlinePlanningTime)/len(offlinePlanningTime))
-    print('Running time Average:',sum(runTimeStats)/len(runTimeStats))
-    print('Reached Goal After:',sum(converganceStats)/len(converganceStats),'iterations')
+    print('Offline Planning time Average:',round(sum(offlinePlanningTime)/len(offlinePlanningTime),6),' seconds')
+    print('Running time Average:',round(sum(runTimeStats)/len(runTimeStats),6),' seconds')
+    print('Average Actions:',aveActions)
+    print('Standard Deviation of Actions:',std)
+    print('Minimum Actions:',min(converganceStats))
+    print('Maximum Actions:',max(converganceStats))
