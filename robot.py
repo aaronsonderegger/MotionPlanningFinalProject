@@ -230,14 +230,19 @@ class Robot:
         else:
             fig, ax = plt.subplots()
 
-        temp = copy.copy(self.probability_map)
+        robot_location = np.zeros(self.probability_map.shape)
+        robot_location[self.truth_position[0:2]] = 100
+        temp_map = copy.copy(self.probability_map)
+        # temp_map[self.GridMap.occupancy_grid] = 0.27
         # temp[self.truth_position[0:2]] += -1
-        imgplot = ax.imshow(temp)
-        # print(temp)
+        imgplot = ax.imshow(temp_map)
+        occ_grid_overlay = ax.imshow(~self.GridMap.occupancy_grid, alpha=0.2)
+        robot_loc_overlay = ax.imshow(robot_location, alpha = 0.2)
         # Set interpolation to nearest to create sharp boundaries
         imgplot.set_interpolation('nearest')
         # Set color map to diverging style for contrast
-        # imgplot1.set_cmap('gray')
+        occ_grid_overlay.set_cmap('gray')
+        robot_loc_overlay.set_cmap('gray')
         imgplot.set_cmap('Spectral')
 
         for r in range(self.rows):
@@ -246,7 +251,7 @@ class Robot:
                     rbt = '\n* *\n U '
                 else:
                     rbt = ''
-                text = ax.text(c,r, str(round(temp[r,c],4))+rbt, ha='center',va='center',color='k')
+                text = ax.text(c,r, str(round(temp_map[r,c],4))+rbt, ha='center',va='center',color='k')
 
         fig.suptitle("Probability Map", fontsize=16)
         plt.draw()
@@ -280,7 +285,7 @@ class Robot:
                     truth_array = np.array(np.array(self.actions) == self.GridMap.policies[(r,c,0)])
                     action_probabilities += truth_array*self.probability_map[r][c]
         most_probable_action = self.actions[np.argmax(action_probabilities)]
-        self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, most_probable_action)
+        self.truth_position = self.GridMap.transition(self.truth_position, most_probable_action)
         self.path_taken.append(self.truth_position)
         # print("Current Position = ", self.truth_position)
 
@@ -290,7 +295,8 @@ class Robot:
         row,col = np.where(self.probability_map == np.max(self.probability_map))
         key = (row[0],col[0],0)
         policy = self.GridMap.policies[key]
-        self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, policy)
+        # print(policy)
+        self.truth_position = self.GridMap.transition(self.truth_position, policy)
         self.path_taken.append(self.truth_position)
         return policy
 
