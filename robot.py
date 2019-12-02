@@ -280,7 +280,7 @@ class Robot:
                     truth_array = np.array(np.array(self.actions) == self.GridMap.policies[(r,c,0)])
                     action_probabilities += truth_array*self.probability_map[r][c]
         most_probable_action = self.actions[np.argmax(action_probabilities)]
-        self.truth_position = self.GridMap.transition(self.truth_position, most_probable_action)
+        self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, most_probable_action)
         self.path_taken.append(self.truth_position)
         # print("Current Position = ", self.truth_position)
 
@@ -290,8 +290,7 @@ class Robot:
         row,col = np.where(self.probability_map == np.max(self.probability_map))
         key = (row[0],col[0],0)
         policy = self.GridMap.policies[key]
-        # print(policy)
-        self.truth_position = self.GridMap.transition(self.truth_position, policy)
+        self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, policy)
         self.path_taken.append(self.truth_position)
         return policy
 

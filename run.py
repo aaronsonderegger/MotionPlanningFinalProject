@@ -158,17 +158,19 @@ if __name__ == "__main__":
         runTimeStats.append(time.time() - start)
         successStats.append(goalReached)
         print(agent.path_taken)
-    aveActions = sum(converganceStats)/len(converganceStats)
-    std = 0.0
-    for i in converganceStats:
-        std += (i - aveActions)**2
-    std = (std/(len(converganceStats) - 1))**0.5 
 
-    print('Statistics For',options.MAP,'and actions',actions)
-    print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
-    print('Offline Planning time Average:',round(sum(offlinePlanningTime)/len(offlinePlanningTime),6),' seconds')
-    print('Running time Average:',round(sum(runTimeStats)/len(runTimeStats),6),' seconds')
-    print('Average Actions:',aveActions)
-    print('Standard Deviation of Actions:',std)
-    print('Minimum Actions:',min(converganceStats))
-    print('Maximum Actions:',max(converganceStats))
+    if options.RUNNING_STATS:
+        aveActions = sum(converganceStats)/len(converganceStats)
+        std = 0.0
+        for i in converganceStats:
+            std += (i - aveActions)**2
+        std = (std/(len(converganceStats) - 1))**0.5 
+    
+        print('Statistics For',options.MAP,'and actions',actions)
+        print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
+        print('Offline Planning time Average:',round(sum(offlinePlanningTime)/len(offlinePlanningTime),6),' seconds')
+        print('Running time Average:',round(sum(runTimeStats)/len(runTimeStats),6),' seconds')
+        print('Average Actions:',aveActions)
+        print('Standard Deviation of Actions:',std)
+        print('Minimum Actions:',min(converganceStats))
+        print('Maximum Actions:',max(converganceStats))

@@ -273,6 +273,21 @@ class GridMap:
 
         return distribution
 
+    def transition_with_random_movement(self, s, a):
+        p = np.random.random()
+        lower = 0
+        tmp = 0
+
+        for k in self.action_probability.keys():
+            # find if my random number is in probabalistic range
+            tmp += self.action_probability[k]
+            if lower <= p and p < tmp:
+                a = self.action_set[(self.action_set.index(a)+k)%len(self.action_set)]
+
+            lower = tmp   # incrament up
+
+        return self.transition(s,a)
+
     def transition(self, s, a):
         '''
         Transition function for the current grid map.
