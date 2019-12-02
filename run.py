@@ -159,7 +159,7 @@ if __name__ == "__main__":
         successStats.append(goalReached)
         print(agent.path_taken)
 
-     if options.RUNNING_STATS:
+    if options.RUNNING_STATS:
         aveActions = sum(converganceStats)/len(converganceStats)
         std = 0.0
         for i in converganceStats:
