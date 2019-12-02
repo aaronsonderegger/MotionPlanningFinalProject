@@ -159,13 +159,13 @@ if __name__ == "__main__":
         successStats.append(goalReached)
         print(agent.path_taken)
 
-    if options.RUNNING_STATS:
+     if options.RUNNING_STATS:
         aveActions = sum(converganceStats)/len(converganceStats)
         std = 0.0
         for i in converganceStats:
             std += (i - aveActions)**2
-        std = (std/(len(converganceStats) - 1))**0.5 
-    
+        std = (std/(len(converganceStats) - 1))**0.5
+
         print('Statistics For',options.MAP,'and actions',actions)
         print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
         print('Offline Planning time Average:',round(sum(offlinePlanningTime)/len(offlinePlanningTime),6),' seconds')

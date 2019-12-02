@@ -5,6 +5,7 @@ import matplotlib
 import copy
 from lidar import LidarSensor
 from scipy.ndimage import convolve
+from mpl_toolkits.mplot3d import Axes3D
 
 _MOVIE = True
 
@@ -213,15 +214,6 @@ class Robot:
 
         return
 
-    def get_prob_from_transition(self):
-        '''
-        When we take an action, uncertainty will grow because we are now
-        less sure of our state. We need to update our probability map
-        using the possible states from our transition function...
-        '''
-
-        return
-
     def display_probability_map(self):
         if _MOVIE:
             fig = self.fig
@@ -255,6 +247,12 @@ class Robot:
 
         fig.suptitle("Probability Map", fontsize=16)
         plt.draw()
+        # # fig, ax = plt.subplots()
+        # fig = plt.figure()
+        # ax = fig.gca(projection='3d')
+        # ax.plot_surface(range(self.columns), range(self.rows), temp_map.flatten())
+        # plt.show()
+
         if _MOVIE:
             plt.pause(1)
         else:
@@ -285,7 +283,7 @@ class Robot:
                     truth_array = np.array(np.array(self.actions) == self.GridMap.policies[(r,c,0)])
                     action_probabilities += truth_array*self.probability_map[r][c]
         most_probable_action = self.actions[np.argmax(action_probabilities)]
-        self.truth_position = self.GridMap.transition(self.truth_position, most_probable_action)
+        self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, most_probable_action)
         self.path_taken.append(self.truth_position)
         # print("Current Position = ", self.truth_position)
 
@@ -296,7 +294,7 @@ class Robot:
         key = (row[0],col[0],0)
         policy = self.GridMap.policies[key]
         # print(policy)
-        self.truth_position = self.GridMap.transition(self.truth_position, policy)
+        self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, policy)
         self.path_taken.append(self.truth_position)
         return policy
 
