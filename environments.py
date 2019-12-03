@@ -90,7 +90,6 @@ class GridMap:
 
         for element in probabilityString.split(','):
             prob += [float(element)]
-        print(prob)
         key_indices = np.array(range(len(prob)))
         key_indices -= int((len(prob)-1) / 2)
         for key, key_prob in zip(key_indices, prob):
@@ -426,17 +425,23 @@ class GridMap:
         return g_cost
 
     def InitializeValueIteration(self,map_path):
-        values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
-        # try:
-        #     policyFile = open('policy_'+map_path+'.obj','rb')
-        #     print('loading')
-        #     self.policies = pickle.load(policyFile)
-        #     self.display_MDPmap(values)
-        # except:
-        #     print('creating Policies')
-        #     values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
-        #     policyFile = open('policy_'+map_path+'.obj', 'wb')
-        #     pickle.dump(self.policies, policyFile)
+        # values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
+        if len(self.action_set) == 4:
+            actionString = '_a2'
+        elif len(self.action_set) == 8:
+            actionString = '_a1'
+        else:
+            actionString = '_a3'
+
+        try:
+            policyFile = open('policy_'+map_path+actionString+'.obj','rb')
+            print('loading')
+            self.policies = pickle.load(policyFile)
+        except:
+            print('creating Policies')
+            values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
+            policyFile = open('policy_'+map_path+actionString+'.obj', 'wb')
+            pickle.dump(self.policies, policyFile)
         # self.display_MDPmap(values)
         # self.display_ActionMap({},self.policies)
 
@@ -750,7 +755,7 @@ def ValueIteration(initState, transitionFunction, is_goal, actions,
     valuesK = ValueIteration_Dict()     # by default all states that are visited for first time are set to 0.
     valuesK_1 = ValueIteration_Dict()   # Needed so I don't keep updating by default set to 0, so I can just call it in my loop, unlike a regular dicitonary.
     rewards = ValueIteration_Dict(stateReward)
-    actionsDict = ValueIteration_Dict()
+    actionsDict = ValueIteration_Dict('u')
     frontier = list()           # For iterating over all states
     if otherStatePenality is not None:
         for penalty,state in otherStatePenality:

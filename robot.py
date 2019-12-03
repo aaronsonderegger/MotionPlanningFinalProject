@@ -5,6 +5,7 @@ import matplotlib
 import copy
 from lidar import LidarSensor
 from scipy.ndimage import convolve
+import pickle
 
 _MOVIE = True
 
@@ -23,7 +24,18 @@ class Robot:
         # Build a look up table of P(O|S), access by self.p_o_given_s
         # self.p_o_given_s.keys() will return sensor readings
         # self.p_o_given_s.items() will return states that could have sensor reading
-        self.initalize_sensor_probability()
+        map_path = map_file.split('/')[1].split('.')[0]
+        try:
+            # Load the PossibleStatesFromObservations Dictionary
+            probFile = open('ProbabilityMap_'+map_path+'_'+str(len(actions))+'.obj','rb')
+            self.PossibleStatesFromObservations = pickle.load(probFile)
+        except:
+            # Create and Save the PossibleStatesFromObservations Dictionary
+            print('creating Sensor Probabilities')
+            self.initalize_sensor_probability()
+            probFile = open('ProbabilityMap_'+map_path+'_'+str(len(actions))+'.obj', 'wb')
+            pickle.dump(self.PossibleStatesFromObservations, probFile)
+
 
         self.gauss_3x3 = np.array(([1, 2, 1],[2, 4, 2],[1, 2, 1]))/16.0 #3x3 gaussian kernel
         if _MOVIE:

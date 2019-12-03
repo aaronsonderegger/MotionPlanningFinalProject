@@ -134,8 +134,8 @@ if __name__ == "__main__":
 
             #4 Carry out some action
             # desired_action = agent.random_movement()
-            desired_action = agent.movement_from_policy()
-            # desired_action = agent.movement_from_max_policy()
+            # desired_action = agent.movement_from_policy()
+            desired_action = agent.movement_from_max_policy()
 
             #5 Update probability_map using gaussian kernel or transition function
             # agent.update_prob_map(action = desired_action, sensor_reading=sensor_reading)
@@ -157,20 +157,25 @@ if __name__ == "__main__":
 
         runTimeStats.append(time.time() - start)
         successStats.append(goalReached)
-        print(agent.path_taken)
+        if not options.RUNNING_STATS:
+            print(agent.path_taken)
 
     if options.RUNNING_STATS:
-        aveActions = sum(converganceStats)/len(converganceStats)
+        if len(converganceStats) > 0:
+            aveActions = sum(converganceStats)/len(converganceStats)
+
+        print('Statistics For',options.MAP,'and actions',actions)
+        print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
+        print('Offline Planning time Average:',round(offlinePlanningTime[0],6),' seconds')
+        print('Running time Average:',round(sum(runTimeStats)/len(runTimeStats),6),' seconds')
+        print('Minimum Actions:',min(converganceStats))
+        print('Average Actions:',aveActions)
+        print('Maximum Actions:',max(converganceStats))
         std = 0.0
         for i in converganceStats:
             std += (i - aveActions)**2
-        std = (std/(len(converganceStats) - 1))**0.5 
-    
-        print('Statistics For',options.MAP,'and actions',actions)
-        print('Success Rate:',sum(successStats)/len(successStats)*100,'%')
-        print('Offline Planning time Average:',round(sum(offlinePlanningTime)/len(offlinePlanningTime),6),' seconds')
-        print('Running time Average:',round(sum(runTimeStats)/len(runTimeStats),6),' seconds')
-        print('Average Actions:',aveActions)
+        if len(converganceStats) > 1:
+            std = (std/(len(converganceStats) - 1))**0.5
+        elif len(converganceStats) <= 1:
+            std = (std)**0.5
         print('Standard Deviation of Actions:',std)
-        print('Minimum Actions:',min(converganceStats))
-        print('Maximum Actions:',max(converganceStats))
