@@ -100,12 +100,12 @@ class GridMap:
         # total = sum(prob)               # for normalizing
         # prob = list(np.cumsum(prob))    # adds up values to 1
         # #
-        
+
         # print("action prob = ", prob)
         # prob1 = list()
         # for p in prob:
         #     prob1.append(round(p/total,3))    # rounds to ensure that there aren't floating point residuals
-        
+
         # for p in prob1:
         #     # makes the actions based off probability with the correct action 0.
         #     # makes the value -1, 0, 1 or -2, -1, 0, 1, 2.
@@ -271,6 +271,22 @@ class GridMap:
             last = k    # Increments up
 
         return distribution
+
+    def transition_with_random_movement(self, s, a):
+        p = np.random.random()
+        lower = 0
+        tmp = 0
+
+        for k in self.action_probability.keys():
+            # find if my random number is in probabalistic range
+            tmp += self.action_probability[k]
+            if lower <= p and p < tmp:
+                a = self.action_set[(self.action_set.index(a)+k)%len(self.action_set)]
+
+            lower = tmp   # incrament up
+
+        return self.transition(s,a)
+
 
     def transition_with_random_movement(self, s, a):
         p = np.random.random()
