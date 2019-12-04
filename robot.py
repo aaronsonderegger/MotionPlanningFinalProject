@@ -191,6 +191,8 @@ class Robot:
 
 
 
+
+
     def update_prob_map(self, possible_states=None, action=None, sensor_reading=None):
         '''
         Use the distribution from possible states and the current probability map
@@ -249,13 +251,16 @@ class Robot:
         robot_loc_overlay.set_cmap('gray')
         imgplot.set_cmap('Spectral')
 
-        for r in range(self.rows):
-            for c in range(self.columns):
-                if (r,c,0) == self.truth_position:
-                    rbt = '\n* *\n U '
-                else:
-                    rbt = ''
-                text = ax.text(c,r, str(round(temp_map[r,c],4))+rbt, ha='center',va='center',color='k')
+        # for r in range(self.rows):
+        #     for c in range(self.columns):
+        #         if (r,c,0) == self.truth_position:
+        #             rbt = '\n* *\n U '
+        #         else:
+        #             rbt = ''
+        #         text = ax.text(c,r, str(round(temp_map[r,c],4))+rbt, ha='center',va='center',color='k')
+        # print(self.truth_position)
+        r,c,_ = self.truth_position
+        text = ax.text(c,r, '* *\n U ' ,ha='center',va='center',color='k')
 
         fig.suptitle("Probability Map", fontsize=16)
         plt.draw()
@@ -266,7 +271,7 @@ class Robot:
         # plt.show()
 
         if _MOVIE:
-            plt.pause(1)
+            plt.pause(0.1)
         else:
             plt.waitforbuttonpress(0) # this will wait for indefinite time
             plt.close(fig)
@@ -308,6 +313,11 @@ class Robot:
         # print(policy)
         self.truth_position = self.GridMap.transition_with_random_movement(self.truth_position, policy)
         self.path_taken.append(self.truth_position)
+
+        if not self.check_if_in_goal_state() and self.GridMap.is_goal(key):
+            # Update Probability_map if it thinks it's at the goal
+            self.probability_map[row[0],col[0]] = 0.0
+
         return policy
 
 

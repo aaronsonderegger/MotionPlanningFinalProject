@@ -147,7 +147,8 @@ if __name__ == "__main__":
             if(goalReached):
                 print("GOAL REACHED!")
                 converganceStats.append(i+1)
-                # agent.display_probability_map()
+                if not options.RUNNING_STATS:
+                    agent.display_probability_map()
                 break
 
             #? Display resulting probability map

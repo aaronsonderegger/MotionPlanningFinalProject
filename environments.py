@@ -231,6 +231,7 @@ class GridMap:
             print('cols', self.cols)
             print(lines)
         self.occupancy_grid = np.zeros((self.rows, self.cols), dtype=np.bool)
+        self.rewardStates = []
         for r in range(self.rows):
             for c in range(self.cols):
                 if lines[r][c] == 'x':
@@ -239,6 +240,8 @@ class GridMap:
                     self.goal = (r,c)
                 elif lines[r][c] == 'i':
                     self.init_pos = (r,c,0)
+                elif lines[r][c] == 'r':
+                    self.rewardStates.append((10,(r,c,0)))
 
     def getObstacles(self):
         return np.argwhere(self.occupancy_grid)
@@ -443,9 +446,9 @@ class GridMap:
     def InitializeValueIteration(self,map_path):
         # values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
         if len(self.action_set) == 4:
-            actionString = '_a2'
-        elif len(self.action_set) == 8:
             actionString = '_a1'
+        elif len(self.action_set) == 8:
+            actionString = '_a2'
         else:
             actionString = '_a3'
 
@@ -455,7 +458,7 @@ class GridMap:
             self.policies = pickle.load(policyFile)
         except:
             print('creating Policies')
-            values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set)
+            values, self.policies = ValueIteration((0,0,0), self.uncertainty_transition, self.is_goal, self.action_set,goalReward=1000)
             policyFile = open('policy_'+map_path+actionString+'.obj', 'wb')
             pickle.dump(self.policies, policyFile)
         # self.display_MDPmap(values)
@@ -771,7 +774,7 @@ def ValueIteration(initState, transitionFunction, is_goal, actions,
     valuesK = ValueIteration_Dict()     # by default all states that are visited for first time are set to 0.
     valuesK_1 = ValueIteration_Dict()   # Needed so I don't keep updating by default set to 0, so I can just call it in my loop, unlike a regular dicitonary.
     rewards = ValueIteration_Dict(stateReward)
-    actionsDict = ValueIteration_Dict('u')
+    actionsDict = ValueIteration_Dict('d')
     frontier = list()           # For iterating over all states
     if otherStatePenality is not None:
         for penalty,state in otherStatePenality:
