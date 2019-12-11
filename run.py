@@ -116,6 +116,7 @@ if __name__ == "__main__":
         # Robot on start up
         if not options.RUNNING_STATS:
             agent.display_probability_map()
+
         #Steps
         for i in range(int(options.num_iterations)):
             #1 Get distances in each direction using queue_sensors (lidar)

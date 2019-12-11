@@ -68,6 +68,7 @@ class GridMap:
             self.read_map(map_path)
 
         self.create_probability_map()
+        print(self.rows,self.cols)
 
 
 

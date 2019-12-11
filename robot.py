@@ -233,23 +233,51 @@ class Robot:
             fig = self.fig
             ax = self.ax
             ax.clear()
+            try:
+                self.cbar.remove()
+            except:
+                pass
         else:
             fig, ax = plt.subplots()
 
         robot_location = np.zeros(self.probability_map.shape)
         robot_location[self.truth_position[0:2]] = 100
         temp_map = copy.copy(self.probability_map)
+        
         # temp_map[self.GridMap.occupancy_grid] = 0.27
         # temp[self.truth_position[0:2]] += -1
-        imgplot = ax.imshow(temp_map)
-        occ_grid_overlay = ax.imshow(~self.GridMap.occupancy_grid, alpha=0.2)
-        robot_loc_overlay = ax.imshow(robot_location, alpha = 0.2)
-        # Set interpolation to nearest to create sharp boundaries
-        imgplot.set_interpolation('nearest')
-        # Set color map to diverging style for contrast
+
+        norm = matplotlib.colors.Normalize(vmin=0., vmax=1.0)
+        pc_kwargs = {'rasterized': True, 'cmap': 'Spectral', 'norm': norm}
+        im = ax.imshow(temp_map, **pc_kwargs)
+        self.cbar = ax.figure.colorbar(im, ax=ax)
+        self.cbar.ax.set_ylabel('Belief Space',rotation=-90,va='center',ha='left')
+
+        grays = matplotlib.colors.Normalize(0, 1, clip=True)(self.GridMap.occupancy_grid)
+        cmap = plt.cm.Greys
+        grays = cmap(grays)
+        grays[...,-1] = self.GridMap.occupancy_grid
+        occ_grid_overlay = ax.imshow(grays)
         occ_grid_overlay.set_cmap('gray')
-        robot_loc_overlay.set_cmap('gray')
-        imgplot.set_cmap('Spectral')
+
+        goal_location = np.zeros(self.probability_map.shape)
+        goal_location[self.GridMap.goal[0:2]] = 1.0
+        display_goal = matplotlib.colors.Normalize(0, 1, clip=True)(goal_location)
+        cmap = plt.cm.Greens
+        display_goal = cmap(display_goal)
+        display_goal[...,-1] = goal_location
+
+
+        # imgplot = ax.imshow(temp_map)
+        robot_loc_overlay = ax.imshow(display_goal)
+        # robot_loc_overlay.set_cmap('Oranges')
+
+        # Set interpolation to nearest to create sharp boundaries
+        # imgplot.set_interpolation('nearest')
+        # Set color map to diverging style for contrast
+        # occ_grid_overlay.set_cmap('gray')
+        # robot_loc_overlay.set_cmap('gray')
+        # imgplot.set_cmap('Spectral')
 
         # for r in range(self.rows):
         #     for c in range(self.columns):
@@ -260,9 +288,12 @@ class Robot:
         #         text = ax.text(c,r, str(round(temp_map[r,c],4))+rbt, ha='center',va='center',color='k')
         # print(self.truth_position)
         r,c,_ = self.truth_position
-        text = ax.text(c,r, '* *\n U ' ,ha='center',va='center',color='k')
+        text = ax.text(c,r, 'R' ,ha='center',va='center',color='k',weight='bold')
+        r,c = self.GridMap.goal
+        text = ax.text(c,r,'G',ha='center',va='center',color='w',weight='bold')
 
         fig.suptitle("Probability Map", fontsize=16)
+        
         plt.draw()
         # # fig, ax = plt.subplots()
         # fig = plt.figure()
